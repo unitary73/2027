@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Nanum+Gothic:wght@400;700;800&family=Nanum+Pen+Script&family=Gaegu:wght@400;700&family=Hi+Melody&family=Nanum+Brush+Script&display=swap">
 <style>
-/* 레이아웃: 화면 전체가 3D 모형 캠퍼스(마당·학과 방·수덕호·중앙도서관). 솔잎색 안내판이 네 귀퉁이에 뜨고, 카드는 오른쪽(휴대폰은 아래)에서 올라온다. 하늘은 실제 시각을 따라 낮·노을·밤으로 바뀐다. */
+/* 레이아웃: 화면 전체가 3D 모형 캠퍼스(마당·학과 방·수덕호·도서관). 솔잎색 안내판이 네 귀퉁이에 뜨고, 카드는 오른쪽(휴대폰은 아래)에서 올라온다. 하늘은 실제 시각을 따라 낮·노을·밤으로 바뀐다. */
 :root{
   --sky:#cfe6ea;        /* 하늘·안개 */
   --sign:#21473a;       /* 캠퍼스 안내판 솔잎색 */
@@ -172,7 +172,7 @@ dd.hl{background:#fff6dc;border-radius:6px;padding:8px 10px;margin-top:5px}
     <div class="top">
       <small>원광디지털대학교 · 17개 학과</small>
       <h1>원광 캠퍼스 마당</h1>
-      <p>학과마다 작은 집이 있고, 마당 밖으로 나가면 수덕호와 중앙도서관이 있어요. 종이배도 타 보세요.</p>
+      <p>학과마다 작은 집이 있고, 마당 밖으로 나가면 수덕호와 도서관이 있어요. 종이배도 타 보세요.</p>
     </div>
     <canvas id="prev" aria-label="내 캐릭터 미리 보기"></canvas>
     <div class="form">
@@ -336,12 +336,12 @@ const D=[
 const BYK=Object.fromEntries(D.map(d=>[d.k,d]));
 const KIND=[['learn','이런 걸 배워요','lr'],['cert','이런 자격을 준비해요','ce'],['job','이런 곳에서 일해요','jb']];
 
-/* ---------- 수덕호와 중앙도서관: 인터넷 공개 자료(원광대 캠퍼스 소개, 대학저널 2026.9.8 기사)에서 확인한 것만 ---------- */
+/* ---------- 수덕호와 도서관: 인터넷 공개 자료(원광대 캠퍼스 소개, 대학저널 2026.9.8 기사)에서 확인한 것만 ---------- */
 const TOUR=[
  [.02,'수덕호(水德湖)는 익산 원광대학교 캠퍼스 한가운데 있는 인공호수예요.'],
  [.17,'호수에는 분수 시설이 있어서 물줄기가 주변 경치를 더해 줘요.'],
  [.33,'호수 가운데 건물은 봉황각이에요. 1·2층이 카페로 쓰이고, 학생들은 ‘닭다방’이라고도 불러요.'],
- [.49,'호수 북쪽이 원광대 중앙도서관이에요. 도서관 정문이 수덕호 쪽으로 나 있어요.'],
+ [.49,'호수 북쪽이 원광디지털대학교 도서관이에요. 도서관 정문이 수덕호 쪽으로 나 있어요.'],
  [.64,'2026년 개교 80주년에는 도서관 앞 호숫가에서 야외 독서축제 ‘수덕호 책마당’이 열렸어요.'],
  [.8,'4월 중순부터 5월 중순까지 호숫가 풍경이 아름답기로 이름나서 봄나들이 오는 사람이 많아요.'],
  [.95,'한 바퀴 다 돌았어요. 선착장으로 돌아가요.']];
@@ -635,8 +635,8 @@ function buildCampus(){
     doors.push({k:d.k,x:x+dx*2.6,z:z+dz*2.6,out:V(x+dx*4.6,z+dz*4.6),outRy:Math.atan2(dx,dz)});
     clickables.push({obj:g,type:'house',k:d.k});
     for(let j=0;j<3;j++){ const t=3.4+j*.9; add(new THREE.CylinderGeometry(.32,.32,.05,8),0xd9c9a2,x+dx*t,.02,z+dz*t,s); } });
-  // 마당 밖으로 나가는 문: 수덕호, 중앙도서관
-  [['lake',gapA[0],'수덕호 · 종이배'],['library',gapA[1],'원광대 중앙도서관']].forEach(([to,a,name])=>{
+  // 마당 밖으로 나가는 문: 수덕호, 도서관
+  [['lake',gapA[0],'수덕호 · 종이배'],['library',gapA[1],'원광디지털대 도서관']].forEach(([to,a,name])=>{
     const r=31, x=Math.cos(a)*r, z=Math.sin(a)*r, g=new THREE.Group(); g.position.set(x,0,z); g.rotation.y=-a-Math.PI/2; s.add(g);
     B(.35,3.2,.35,WOOD2,-1.7,0,0,g); B(.35,3.2,.35,WOOD2,1.7,0,0,g); B(4.2,.4,.5,0x21473a,0,3.1,0,g);
     const lb=label(name+' →',{display:true,fs:52,h:.6,bg:'#2f6d8f'}); lb.position.set(0,4.1,0); g.add(lb);
@@ -811,12 +811,12 @@ function buildLake(){ const s=makeScene(); scenes.lake=s; s.fog=new THREE.Fog(0x
   for(let i=0;i<12;i++){ const a=i/12*Math.PI*2; lamp(s,LAKE.cx+Math.cos(a)*20.8,LAKE.cz+Math.sin(a)*15); }
   for(let i=0;i<16;i++){ const a=i/16*Math.PI*2+.2; if(Math.abs(Math.sin(a))>.9) continue; const x=LAKE.cx+Math.cos(a)*17.9, z=LAKE.cz+Math.sin(a)*12.6; tree(s,x,z,1.5,1); obstacles.lake.push({x,z,r:.45}); }
   for(let i=0;i<40;i++){ const a=i/40*Math.PI*2+Math.random()*.05; if(Math.abs(Math.sin(a))>.86) continue; const k=rr(1.45,1.75); tree(s,LAKE.cx+Math.cos(a)*19.2*k,LAKE.cz+Math.sin(a)*13.6*k,rr(1,2),rr(.9,1.5)); }
-  // 중앙도서관 바깥: 정문이 호수를 본다
+  // 도서관 바깥: 정문이 호수를 본다
   const lib=new THREE.Group(); lib.position.set(0,0,-23.5); s.add(lib);
   B(22,11,8,0xe9e4da,0,0,0,lib); B(22.4,.4,8.4,0x8a8a86,0,11,0,lib);
   for(let f=0;f<6;f++) for(let c=0;c<9;c++) if(!(f===0&&c>=3&&c<=5)) B(1.5,1.1,.08,WINM,-9+c*2.25,1.5+f*1.55,4.02,lib);
   B(5,2.6,.1,0x5d7f8f,0,0,4.03,lib); B(6,.25,1.8,0x8a8a86,0,2.8,4.6,lib); for(const x of [-2.8,2.8]) C(.1,.1,2.8,0x8a8a86,x,0,5.3,lib,8);
-  const ll=label('원광대학교 중앙도서관',{display:true,fs:52,h:.62,bg:'rgba(33,71,58,.92)'}); ll.position.set(0,3.9,5); lib.add(ll);
+  const ll=label('원광디지털대학교 도서관',{display:true,fs:52,h:.62,bg:'rgba(33,71,58,.92)'}); ll.position.set(0,3.9,5); lib.add(ll);
   obstacles.lake.push({box:1,x:0,z:-23.5,w:22,d:8});
   clickables.push({obj:lib,type:'libout'});
   // 남쪽 문: 캠퍼스 마당으로
@@ -832,7 +832,7 @@ function buildLake(){ const s=makeScene(); scenes.lake=s; s.fog=new THREE.Fog(0x
   addAnimal('lake','rabbit','토끼 콩이',V(15,14),{col:0x9a9aa6});
   spawnLakeWalkers(); applyTime(); }
 
-/* ---------- 원광대 중앙도서관 ---------- */
+/* ---------- 원광디지털대학교 도서관 ---------- */
 const LANES=[.9,6.25,11.8];
 function buildLibrary(){ const s=makeScene(true,0xece6da); scenes.library=s;
   B(28,.3,20,0xcbb48c,0,-.3,0,s);
@@ -1010,7 +1010,7 @@ async function connectRoom(){ if(WEB) return connectWeb(); try{ if(!window.claud
   sendPresence(true); updateWho(); }catch(e){ room=null; } }
 
 /* ---------- 장소 바꾸기 ---------- */
-const PLACE_NAME={campus:'캠퍼스 마당',lake:'원광대 수덕호',library:'원광대 중앙도서관'};
+const PLACE_NAME={campus:'캠퍼스 마당',lake:'원광대 수덕호',library:'원광디지털대학교 도서관'};
 const LEAVE={lake:'캠퍼스로 돌아가기',library:'수덕호로 나가기'};
 function ensure(where){ if(scenes[where]) return; if(where==='lake') buildLake(); else if(where==='library') buildLibrary(); else buildRoom(BYK[where]); }
 function go(where,pos,ry){ if(ride) endRide(true); if(fw) endFw(); ensure(where);
@@ -1021,7 +1021,7 @@ function go(where,pos,ry){ if(ride) endRide(true); if(fw) endFw(); ensure(where)
   $('leaveBtn').hidden=where==='campus'; $('leaveBtn').textContent=d?'캠퍼스로 나가기':LEAVE[where];
   if(d){ visited.add(d.k); store.set('visited',[...visited]); Sound.chime(); hint(`${d.s} 방이에요. ? 표시를 눌러 보세요.`); }
   else if(where==='lake'){ Sound.chime(); hint('수덕호예요. 선착장에서 종이배를 탈 수 있어요.'); }
-  else if(where==='library'){ Sound.chime(); hint('중앙도서관이에요. 층별 안내판을 눌러 보세요.'); }
+  else if(where==='library'){ Sound.chime(); hint('도서관이에요. 층별 안내판을 눌러 보세요.'); }
   else hint('캠퍼스 마당이에요.');
   camSnap=true; if(room) syncPeers(room.peers()); sendPresence(true); updateWho(); closePops(); }
 function leave(){ const ex=EXITS[place]&&EXITS[place].find(e=>e.to!=='library'||place==='campus'); if(place==='lake') return go('campus',gates.lake.back,gates.lake.backRy);
@@ -1206,7 +1206,7 @@ function hostCard(){ showP('마당지기의 안내','원광디지털대학교는
   <dt>집 둘레를 보면</dt><dd>‘원광뿐’ 표시가 붙은 집은 사이버대 중 원광에만 있는 학과예요. 6곳이에요.</dd>
   <dt>광장 게시판</dt><dd>큰 나무 왼쪽 게시판에 포스트잇을 한 장 붙이고, 다른 분들의 글도 읽을 수 있어요.</dd>
   <dt>스탬프와 불꽃놀이</dt><dd class="hl">학과 방지기에게 안내를 받으면 스탬프를 받아요. 5개를 모으면 불꽃놀이 쿠폰이 생겨요.</dd>
-  <dt>마당 밖으로</dt><dd>파란 표지판 문을 지나면 익산 원광대학교의 수덕호와 중앙도서관에 갈 수 있어요. 수덕호에서는 종이배를 타요.</dd></dl>
+  <dt>마당 밖으로</dt><dd>파란 표지판 문을 지나면 익산 원광대학교의 수덕호와 도서관에 갈 수 있어요. 수덕호에서는 종이배를 타요.</dd></dl>
   <div class="btns"><button class="btn" type="button" id="toList">갈 곳 목록 보기</button></div>${consultHtml('campus')}`);
   $('toList').onclick=roomList; }
 const SRC='<p class="note">자료: 인터넷에 공개된 원광대학교 캠퍼스 소개, 대학저널 기사(2026.9.8). 학교 사정에 따라 지금과 다를 수 있어요.</p>';
@@ -1218,7 +1218,8 @@ function lakeCard(){ showP('익산 원광대학교','수덕호',`
   <dt>책마당</dt><dd>2026년 개교 80주년에 호숫가에서 야외 독서축제 ‘수덕호 책마당’이 열렸어요.</dd></dl>
   <div class="btns"><button class="btn sun" type="button" id="rideNow">⛵ 종이배 타고 한 바퀴 돌기</button></div>${SRC}`);
   $('rideNow').onclick=()=>{ if(place!=='lake') return; if(Math.hypot(myPos.x,myPos.z-9.9)>3){ target.set(0,0,10.2); pending={ride:1}; hideP(); hint('선착장으로 걸어가요.'); } else startRide(); }; }
-function libCard(){ showP('익산 원광대학교','중앙도서관',`
+function libCard(){ showP('원광 캠퍼스 마당','원광디지털대학교 도서관',`
+  <p class="note">이 공간은 익산 원광디지털대학교 도서관을 본떠 꾸몄어요. 아래 층별 안내와 역사는 그 도서관 이야기예요.</p>
   <p class="slogan">정문은 수덕호 쪽, 후문은 교학대학 쪽으로 나 있어요.</p>
   <div class="floors"><b>6·7층</b><span>고문헌서고, 보존서고</span><b>4·5층</b><span>서가</span><b>3층</b><span>디지털정보센터, 그룹스터디 부스 4개</span><b>1·2층</b><span>24시간 자유열람실</span></div>
   <dl><dt>역사</dt><dd>1946년 유일학림 부속 도서실로 시작했어요. 지금 건물은 2012년에 새로 지었고, 지하 1층·지상 7층이에요.</dd>
@@ -1231,7 +1232,7 @@ function festCard(){ showP('개교 80주년 야외 독서축제','수덕호 책�
 function roomList(){ let h=`<div class="rlist"><div><h3>캠퍼스 명소</h3><div class="grid">
   <button type="button" data-p="campus"><i style="background:#9cc27a"></i><span>캠퍼스 마당</span></button>
   <button type="button" data-p="lake"><i style="background:#5aa7c7"></i><span>수덕호 · 종이배</span></button>
-  <button type="button" data-p="library"><i style="background:#21473a"></i><span>중앙도서관</span></button></div></div>
+  <button type="button" data-p="library"><i style="background:#21473a"></i><span>도서관</span></button></div></div>
   <p class="prog">학과 방 17개 중 ${visited.size}개를 둘러봤어요</p>`;
   BU.forEach((b,bi)=>{ h+=`<div><h3>${b.n}</h3><div class="grid">`+D.filter(d=>d.b===bi).map(d=>`<button type="button" data-k="${d.k}"><i style="background:${hexColor(d.c)}"></i><span>${esc(d.s)}</span>${visited.has(d.k)?'<em>✓</em>':''}</button>`).join('')+'</div></div>'; });
   showP('바로 가기','갈 곳 목록',h+'</div>');
