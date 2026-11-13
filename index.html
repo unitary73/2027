@@ -1219,7 +1219,7 @@ function lakeCard(){ showP('익산 원광대학교','수덕호',`
   <div class="btns"><button class="btn sun" type="button" id="rideNow">⛵ 종이배 타고 한 바퀴 돌기</button></div>${SRC}`);
   $('rideNow').onclick=()=>{ if(place!=='lake') return; if(Math.hypot(myPos.x,myPos.z-9.9)>3){ target.set(0,0,10.2); pending={ride:1}; hideP(); hint('선착장으로 걸어가요.'); } else startRide(); }; }
 function libCard(){ showP('원광 캠퍼스 마당','원광디지털대학교 도서관',`
-  <p class="note">이 공간은 익산 원광디지털대학교 도서관을 본떠 꾸몄어요. 아래 층별 안내와 역사는 그 도서관 이야기예요.</p>
+  <p class="note">이 공간은 익산 원광대학교 중앙도서관을 본떠 꾸몄어요. 아래 층별 안내와 역사는 그 도서관 이야기예요.</p>
   <p class="slogan">정문은 수덕호 쪽, 후문은 교학대학 쪽으로 나 있어요.</p>
   <div class="floors"><b>6·7층</b><span>고문헌서고, 보존서고</span><b>4·5층</b><span>서가</span><b>3층</b><span>디지털정보센터, 그룹스터디 부스 4개</span><b>1·2층</b><span>24시간 자유열람실</span></div>
   <dl><dt>역사</dt><dd>1946년 유일학림 부속 도서실로 시작했어요. 지금 건물은 2012년에 새로 지었고, 지하 1층·지상 7층이에요.</dd>
