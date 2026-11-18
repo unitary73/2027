@@ -1174,6 +1174,10 @@ function buildBoard(s){ BOARD.cv=document.createElement('canvas'); BOARD.cv.widt
 // 한 사람이 여러 장 붙일 수 있다. o = 붙인 사람, id = 포스트잇 번호. 붙인 뒤 NOTE_WAIT 동안은 다음 장을 못 붙인다
 const NOTE_WAIT=30000, NOTE_MAX_ART=50;
 let lastNoteAt=0; try{ lastNoteAt=+localStorage.getItem('campusLastNote')||0; }catch(e){}
+// 기다리는 동안 붙이기 버튼에 남은 초를 1초마다 보여 준다
+function tickNoteBtn(){ const b=$('noteSave'); if(!b) return; const wait=Math.ceil((lastNoteAt+NOTE_WAIT-Date.now())/1000);
+  const txt=wait>0?`⏳ ${wait}초 뒤에 붙일 수 있어요`:'📌 붙이기'; if(b.textContent!==txt) b.textContent=txt; b.disabled=wait>0; b.classList.toggle('closed',wait>0); }
+setInterval(()=>{ if(panelKind==='board'&&!$('panel').hidden) tickNoteBtn(); },250);
 function setNotes(rows){ boardState='on';
   notes=(rows||[]).map(v=>({id:String(v.id),o:String(v.o||v.id),t:cleanT(v.t,60),c:Number.isInteger(v.c)&&v.c>=0&&v.c<NOTEC.length?v.c:0,f:Number.isInteger(v.f)&&v.f>=0&&v.f<NFONT.length?v.f:0,n:clean(v.n)||'손님',at:+v.at||0})).filter(n=>n.t)
     .sort((a,b)=>b.at-a.at).slice(0,60);
@@ -1235,9 +1239,10 @@ function boardCard(keep){ if(!keep){ noteDraft=null; noteMsg=''; }
     const wait=Math.ceil((lastNoteAt+NOTE_WAIT-Date.now())/1000); if(wait>0) return say(wait+'초 뒤에 한 장 더 붙일 수 있어요.');
     const btn=$('noteSave'); btn.disabled=true;
     try{ const at=Date.now(); await db.add({t:text,c:noteColor,f:noteFont,n:me.n,at}); lastNoteAt=at; try{ localStorage.setItem('campusLastNote',String(at)); }catch(e){}
-      noteDraft=''; const el=$('noteText'); if(el) el.value=''; say('게시판에 붙였어요. 30초 뒤에 한 장 더 붙일 수 있어요.'); Sound.chime(); setFace(my,'joy'); faceHold=2; }
+      noteDraft=''; const el=$('noteText'); if(el) el.value=''; say('게시판에 붙였어요. 아래 버튼의 초가 다 지나면 한 장 더 붙일 수 있어요.'); Sound.chime(); setFace(my,'joy'); faceHold=2; }
     catch(e){ say(e&&e.code==='too_many'?'한 사람이 붙일 수 있는 글이 가득 찼어요. 예전 글을 떼고 다시 붙여 주세요.':WEB?'지금은 글을 붙일 수 없어요. 잠시 뒤 다시 해 주세요.':'지금은 글을 붙일 수 없어요. 보기 권한만 있는 분은 글을 쓸 수 없어요.'); }
-    finally{ if($('noteSave')) $('noteSave').disabled=false; } };
+    finally{ if($('noteSave')) $('noteSave').disabled=false; tickNoteBtn(); } };
+  tickNoteBtn();
   $('pbody').querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{ const n=notes.find(x=>x.id===b.dataset.del); if(!n) return; b.disabled=true;
     try{ await db.remove(n); say(n.o===uid?'내 글을 뗐어요.':'글을 뗐어요.'); }catch(e){ b.disabled=false; say('지금은 글을 뗄 수 없어요.'); } }); }
 
