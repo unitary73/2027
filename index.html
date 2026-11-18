@@ -1140,7 +1140,7 @@ function stepFw(dt){ fw.t+=dt;
     if(dead){ q.obj.parent&&q.obj.parent.remove(q.obj); q.obj.geometry.dispose(); q.obj.material.dispose(); fw.parts.splice(i,1); } }
   if(fw.t>=fw.dur&&!fw.parts.length){ endFw(); hint('불꽃놀이가 끝났어요. 스탬프를 더 모으면 또 쏠 수 있어요.'); setFace(my,me.f); faceHold=0; } }
 
-/* ---------- 광장 게시판: 한 사람이 포스트잇 한 장. 글은 아티팩트 저장소(db)에 두고 모두가 본다 ---------- */
+/* ---------- 광장 게시판: 한 사람이 포스트잇 여러 장(30초 간격). 글은 Supabase 또는 아티팩트 저장소(db)에 두고 모두가 본다 ---------- */
 const PEN='"Nanum Pen Script","Nanum Gothic",cursive';
 const NFONT=[{n:'펜글씨',f:'"Nanum Pen Script"',s:1},{n:'또박또박',f:'"Gaegu"',s:.8},{n:'동글동글',f:'"Hi Melody"',s:.82},{n:'붓글씨',f:'"Nanum Brush Script"',s:1.02}];
 const BADW=['시발','씨발','ㅅㅂ','병신','ㅂㅅ','좆','개새','지랄','새끼','꺼져','죽어','섹스','fuck','shit'];
@@ -1171,10 +1171,14 @@ function buildBoard(s){ BOARD.cv=document.createElement('canvas'); BOARD.cv.widt
   const m=new THREE.Mesh(new THREE.PlaneGeometry(4.2,2.3),new THREE.MeshStandardMaterial({map:BOARD.tex,roughness:1})); m.position.set(0,1.95,.07); g.add(m);
   const lb=label('광장 게시판',{display:true,fs:52,h:.56,bg:'rgba(33,71,58,.95)'}); lb.position.set(0,3.85,0); g.add(lb);
   g.userData.mark=bubbleMark(g,4.45); clickables.push({obj:g,type:'board'}); obstacles.campus.push({box:1,x:BOARD.x,z:BOARD.z,w:4.7,d:.5}); drawBoard(); }
+// 한 사람이 여러 장 붙일 수 있다. o = 붙인 사람, id = 포스트잇 번호. 붙인 뒤 NOTE_WAIT 동안은 다음 장을 못 붙인다
+const NOTE_WAIT=30000, NOTE_MAX_ART=50;
+let lastNoteAt=0; try{ lastNoteAt=+localStorage.getItem('campusLastNote')||0; }catch(e){}
 function setNotes(rows){ boardState='on';
-  notes=(rows||[]).map(v=>({id:String(v.id),t:cleanT(v.t,60),c:Number.isInteger(v.c)&&v.c>=0&&v.c<NOTEC.length?v.c:0,f:Number.isInteger(v.f)&&v.f>=0&&v.f<NFONT.length?v.f:0,n:clean(v.n)||'손님',at:+v.at||0})).filter(n=>n.t);
+  notes=(rows||[]).map(v=>({id:String(v.id),o:String(v.o||v.id),t:cleanT(v.t,60),c:Number.isInteger(v.c)&&v.c>=0&&v.c<NOTEC.length?v.c:0,f:Number.isInteger(v.f)&&v.f>=0&&v.f<NFONT.length?v.f:0,n:clean(v.n)||'손님',at:+v.at||0})).filter(n=>n.t)
+    .sort((a,b)=>b.at-a.at).slice(0,60);
   drawBoard(); refreshBoard(); }
-// Supabase: 함께 보이기는 Presence, 게시판은 notes 표(익명 로그인으로 자기 글만 고치고 뗀다)
+// Supabase: 함께 보이기는 Presence, 게시판은 notes 표(익명 로그인으로 자기 글만 붙이고 뗀다)
 async function connectWeb(){ const off=()=>{ if(boardState!=='on'){ boardState='off'; drawBoard(); refreshBoard(); } };
   const timer=setTimeout(()=>{ if(boardState==='loading') off(); },10000);
   try{ if(!window.supabase){ clearTimeout(timer); return off(); }
@@ -1183,11 +1187,11 @@ async function connectWeb(){ const off=()=>{ if(boardState!=='on'){ boardState='
     const ch=sb.channel('campus',{config:{presence:{key}}});
     ch.on('presence',{event:'sync'},()=>{ const st=ch.presenceState(); list=Object.keys(st).slice(0,80).map(k=>({peer:k,sameTab:k===key,kind:'viewer',presence:(st[k]&&st[k][0])||{}})); if(room) syncPeers(list); });
     ch.subscribe(status=>{ if(status==='SUBSCRIBED'){ room={presence:q=>ch.track(q),peers:()=>list}; sendPresence(true); syncPeers(list); } });
-    const loadNotes=async()=>{ const r=await sb.from('notes').select('id,t,c,f,n,at').order('at',{ascending:false}).limit(60); clearTimeout(timer); if(r.error) return off(); setNotes(r.data); };
+    const loadNotes=async()=>{ const r=await sb.from('notes').select('id,owner,t,c,f,n,at').order('at',{ascending:false}).limit(60); clearTimeout(timer); if(r.error) return off(); setNotes(r.data.map(v=>Object.assign({o:v.owner},v))); };
     try{ let s=(await sb.auth.getSession()).data.session; if(!s) s=(await sb.auth.signInAnonymously()).data.session; uid=s&&s.user?s.user.id:null; }catch(e){ uid=null; }
-    db={doc:path=>{ const id=path.split('/')[1]; return {
-      set:async d=>{ const r=await sb.from('notes').upsert(Object.assign({id},d)); if(r.error) throw r.error; await loadNotes(); },
-      delete:async()=>{ const r=await sb.from('notes').delete().eq('id',id); if(r.error) throw r.error; await loadNotes(); } }; }};
+    // id 와 owner 는 DB 가 채운다(새 번호, 로그인한 사람)
+    db={add:async d=>{ const r=await sb.from('notes').insert(d); if(r.error) throw r.error; await loadNotes(); },
+      remove:async n=>{ const r=await sb.from('notes').delete().eq('id',n.id); if(r.error) throw r.error; await loadNotes(); }};
     sb.channel('notes-live').on('postgres_changes',{event:'*',schema:'public',table:'notes'},()=>loadNotes()).subscribe();
     await loadNotes();
   }catch(e){ clearTimeout(timer); off(); } }
@@ -1195,22 +1199,30 @@ async function connectBoard(){ if(WEB) return; const off=()=>{ boardState='off';
   const timer=setTimeout(()=>{ if(boardState==='loading') off(); },10000);
   try{ if(!window.claude||!claude.use){ clearTimeout(timer); return off(); }
     const [d,u]=await Promise.all([claude.use('db'),claude.use('user')]); if(!d){ clearTimeout(timer); return off(); }
-    db=d; if(u){ try{ uid=await u.id(); amOwner=await u.isOwner(); }catch(e){} }
-    db.collection('notes').orderBy('at','desc').limit(60).onSnapshot(snap=>{ clearTimeout(timer); setNotes(snap.docs.map(doc=>Object.assign({},doc.data(),{id:doc.id}))); },()=>{ clearTimeout(timer); off(); });
+    if(u){ try{ uid=await u.id(); amOwner=await u.isOwner(); }catch(e){} }
+    // 아티팩트판: notes/<사람 id> 문서 하나에 그 사람의 포스트잇 목록(list)을 담는다. 예전 한 장짜리 문서({t,c,f,n,at})도 그대로 읽는다
+    const itemsOf=o=>notes.filter(n=>n.o===o).map(n=>({k:n.id.slice(o.length+1)||'0',t:n.t,c:n.c,f:n.f,n:n.n,at:n.at}));
+    const save=async(o,list)=>{ const ref=d.doc('notes/'+o); if(!list.length) return ref.delete(); await ref.set({list,at:Math.max(...list.map(x=>x.at))}); };
+    db={add:async x=>{ const list=itemsOf(uid); if(list.length>=NOTE_MAX_ART) throw {code:'too_many'};
+        await save(uid,[...list,Object.assign({k:Date.now().toString(36)+Math.random().toString(36).slice(2,6)},x)]); },
+      remove:async n=>save(n.o,itemsOf(n.o).filter(x=>n.o+':'+x.k!==n.id))};
+    d.collection('notes').orderBy('at','desc').limit(60).onSnapshot(snap=>{ clearTimeout(timer);
+      setNotes(snap.docs.flatMap(doc=>{ const v=doc.data()||{}; return Array.isArray(v.list)?v.list.map(x=>Object.assign({},x,{id:doc.id+':'+x.k,o:doc.id})):[Object.assign({},v,{id:doc.id+':0',o:doc.id})]; })); },()=>{ clearTimeout(timer); off(); });
   }catch(e){ clearTimeout(timer); off(); } }
 function refreshBoard(){ if(panelKind==='board'&&!$('panel').hidden){ const el=$('noteText'); if(el) noteDraft=el.value; boardCard(true); } }
-function boardCard(keep){ const mine=uid?notes.find(n=>n.id===uid):null; if(!keep){ noteDraft=null; noteMsg=''; noteColor=mine?mine.c:0; noteFont=mine?mine.f:0; }
+function boardCard(keep){ if(!keep){ noteDraft=null; noteMsg=''; }
+  const myCount=uid?notes.filter(n=>n.o===uid).length:0;
   let top;
   if(boardState==='loading') top='<p class="note">게시판을 불러오는 중이에요.</p>';
   else if(boardState==='off') top=WEB?'<p class="note">게시판에 연결하지 못했어요. 잠시 뒤 다시 열어 주세요.</p>':'<p class="note">게시판은 로그인한 분께만 보여요. 지금은 글을 읽거나 쓸 수 없어요.</p>';
   else if(!uid) top=WEB?'<p class="note">지금은 글을 읽기만 할 수 있어요.</p>':'<p class="note">글을 붙이려면 로그인이 필요해요. 다른 분의 글은 아래에서 볼 수 있어요.</p>';
-  else top=`<div><label class="lbl" for="noteText">내 포스트잇 (한 사람 한 장, 60자까지)</label>
-    <textarea id="noteText" maxlength="60" rows="3" style="font-family:${esc(nfont(noteFont))};font-size:${Math.round(24*NFONT[noteFont].s)}px;background:${NOTEC[noteColor]}" placeholder="예: 내년엔 꼭 시작해 볼래요!">${esc(noteDraft!==null?noteDraft:mine?mine.t:'')}</textarea>
+  else top=`<div><label class="lbl" for="noteText">새 포스트잇 (60자까지, 여러 장 붙일 수 있어요${myCount?' · 내가 붙인 글 '+myCount+'장':''})</label>
+    <textarea id="noteText" maxlength="60" rows="3" style="font-family:${esc(nfont(noteFont))};font-size:${Math.round(24*NFONT[noteFont].s)}px;background:${NOTEC[noteColor]}" placeholder="예: 내년엔 꼭 시작해 볼래요!">${esc(noteDraft!==null?noteDraft:'')}</textarea>
     <div class="swatch">${NOTEC.map((c,i)=>`<button type="button" style="background:${c}" aria-label="종이 색 ${i+1}" aria-pressed="${noteColor===i}" data-nc="${i}"></button>`).join('')}</div>
     <div class="chips">${NFONT.map((o,i)=>`<button type="button" aria-pressed="${noteFont===i}" data-nf="${i}" style="font-family:${esc(nfont(i))};font-size:${Math.round(19*o.s)}px;font-weight:400">${o.n}</button>`).join('')}</div></div>
-    <div class="row2"><button class="btn sun" type="button" id="noteSave">${mine?'고쳐 붙이기':'📌 붙이기'}</button>${mine?'<button class="btn line" type="button" id="noteDel">내 글 떼기</button>':''}</div>
-    <p class="note" id="noteMsg" aria-live="polite">${esc(noteMsg||'이름은 '+me.n+' 님으로 붙어요. 서로 기분 좋은 말을 남겨 주세요. 전화번호 같은 개인정보는 쓸 수 없어요.')}</p>`;
-  const list=notes.length?`<div class="notes">${notes.map(n=>`<div class="pn" style="background:${NOTEC[n.c]}"><p style="font-family:${esc(nfont(n.f))};font-size:${Math.round(23*NFONT[n.f].s)}px">${esc(n.t)}</p><small>— ${esc(n.n)} 님${n.id===uid?' (나)':''}</small>${amOwner&&n.id!==uid?`<button type="button" data-del="${esc(n.id)}" aria-label="이 글 떼기">✕</button>`:''}</div>`).join('')}</div>`
+    <div class="row2"><button class="btn sun" type="button" id="noteSave">📌 붙이기</button></div>
+    <p class="note" id="noteMsg" aria-live="polite">${esc(noteMsg||'이름은 '+me.n+' 님으로 붙어요. 내 글은 아래 ✕로 뗄 수 있어요. 서로 기분 좋은 말을 남겨 주세요. 전화번호 같은 개인정보는 쓸 수 없어요.')}</p>`;
+  const list=notes.length?`<div class="notes">${notes.map(n=>`<div class="pn" style="background:${NOTEC[n.c]}"><p style="font-family:${esc(nfont(n.f))};font-size:${Math.round(23*NFONT[n.f].s)}px">${esc(n.t)}</p><small>— ${esc(n.n)} 님${uid&&n.o===uid?' (나)':''}</small>${uid&&n.o===uid||amOwner?`<button type="button" data-del="${esc(n.id)}" aria-label="${uid&&n.o===uid?'내 글':'이 글'} 떼기">✕</button>`:''}</div>`).join('')}</div>`
     :(boardState==='on'?'<p class="note">아직 붙은 글이 없어요. 첫 포스트잇을 붙여 보세요.</p>':'');
   showP('캠퍼스 마당','광장 게시판',top+`<h3 class="lbl" style="margin:4px 0 0">붙어 있는 글 ${notes.length}장</h3>`+list); panelKind='board';
   $('pbody').querySelectorAll('[data-nc]').forEach(b=>b.onclick=()=>{ noteColor=+b.dataset.nc; noteDraft=$('noteText').value; boardCard(true); });
@@ -1220,10 +1232,14 @@ function boardCard(keep){ const mine=uid?notes.find(n=>n.id===uid):null; if(!kee
     if(!text) return say('글을 한 줄 적어 주세요.');
     if(/\d{2,4}[-\s.]?\d{3,4}[-\s.]?\d{4}/.test(text)||/https?:|www\.|@/i.test(text)) return say('전화번호, 메일, 링크는 쓸 수 없어요.');
     if(BADW.some(w=>text.replace(/\s/g,'').toLowerCase().includes(w))) return say('고운 말로 다시 적어 주세요.');
-    try{ await db.doc('notes/'+uid).set({t:text,c:noteColor,f:noteFont,n:me.n,at:Date.now()}); noteDraft=null; say('게시판에 붙였어요.'); Sound.chime(); setFace(my,'joy'); faceHold=2; }
-    catch(e){ say(WEB?'지금은 글을 붙일 수 없어요. 잠시 뒤 다시 해 주세요.':'지금은 글을 붙일 수 없어요. 보기 권한만 있는 분은 글을 쓸 수 없어요.'); } };
-  if($('noteDel')) $('noteDel').onclick=async()=>{ try{ await db.doc('notes/'+uid).delete(); noteDraft=''; say('내 글을 뗐어요.'); }catch(e){ say('지금은 글을 뗄 수 없어요.'); } };
-  $('pbody').querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{ try{ await db.doc('notes/'+b.dataset.del).delete(); }catch(e){} }); }
+    const wait=Math.ceil((lastNoteAt+NOTE_WAIT-Date.now())/1000); if(wait>0) return say(wait+'초 뒤에 한 장 더 붙일 수 있어요.');
+    const btn=$('noteSave'); btn.disabled=true;
+    try{ const at=Date.now(); await db.add({t:text,c:noteColor,f:noteFont,n:me.n,at}); lastNoteAt=at; try{ localStorage.setItem('campusLastNote',String(at)); }catch(e){}
+      noteDraft=''; const el=$('noteText'); if(el) el.value=''; say('게시판에 붙였어요. 30초 뒤에 한 장 더 붙일 수 있어요.'); Sound.chime(); setFace(my,'joy'); faceHold=2; }
+    catch(e){ say(e&&e.code==='too_many'?'한 사람이 붙일 수 있는 글이 가득 찼어요. 예전 글을 떼고 다시 붙여 주세요.':WEB?'지금은 글을 붙일 수 없어요. 잠시 뒤 다시 해 주세요.':'지금은 글을 붙일 수 없어요. 보기 권한만 있는 분은 글을 쓸 수 없어요.'); }
+    finally{ if($('noteSave')) $('noteSave').disabled=false; } };
+  $('pbody').querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{ const n=notes.find(x=>x.id===b.dataset.del); if(!n) return; b.disabled=true;
+    try{ await db.remove(n); say(n.o===uid?'내 글을 뗐어요.':'글을 뗐어요.'); }catch(e){ b.disabled=false; say('지금은 글을 뗄 수 없어요.'); } }); }
 
 /* ---------- 카드 ---------- */
 function showP(kick,title,html){ panelKind=''; $('pk').textContent=kick; $('ph').textContent=title; $('pbody').innerHTML=html; $('panel').hidden=false; $('pbody').scrollTop=0; }
